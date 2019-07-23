@@ -1,9 +1,8 @@
-
 const mongoose = require('mongoose');
-
+const bcrypt = require('bcryptjs');
+const saltRounds = 10;
 
 const userSchema = mongoose.Schema({
-    _id: mongoose.Schema.Types.ObjectId,
     email: { 
         type: String, 
         required: true, 
@@ -11,6 +10,10 @@ const userSchema = mongoose.Schema({
         match: /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/
     },
     password: { type: String, required: true }
+});
+
+userSchema.pre('save', async function() {
+	this.password = await bcrypt.hashSync(this.password, saltRounds);
 });
 
 module.exports = mongoose.model('User', userSchema);

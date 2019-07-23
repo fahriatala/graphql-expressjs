@@ -3,19 +3,17 @@ const app = express();
 const morgan = require('morgan');
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
+const config = require("./config/config");
 
 const productRoutes = require("./api/routes/products");
 const orderRoutes = require("./api/routes/orders");
 const userRoutes = require("./api/routes/user");
 
-mongoose.connect(
-    "mongodb+srv://fahriatala:" +
-     process.env.MONGO_ATLAS_PW + 
-     "@learncluster-cwpbg.mongodb.net/test?retryWrites=true&w=majority",
-      {
-        useNewUrlParser: true,
-        useCreateIndex: true
-      }
+mongoose.connect(config.mongoURI,
+    {
+      useNewUrlParser: true,
+      useCreateIndex: true
+    }
 );
 mongoose.Promise = global.Promise;
 

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const configJwt = require("../../config/config");
 
 const User = require('../models/user');
 
@@ -20,7 +21,7 @@ exports.user_signup = (req, res, next) => {
                         });
                     } else{
                         const user = new User({
-                            _id: new mongoose.Types.ObjectId(),
+                            // _id: new mongoose.Types.ObjectId(),
                             email: req.body.email,
                             password: hash
                         });  
@@ -44,6 +45,17 @@ exports.user_signup = (req, res, next) => {
         })     
 }
 
+exports.userCreate = async (req, res, next) => {
+    const input = req.body;
+    try {
+        const user = await User.create(input);
+        res.json(user)
+    } catch (error) {
+        next(error)
+    }
+   
+}
+
 exports.user_login = (req, res, next) => {
     User.find({ email: req.body.email })
         .exec()
@@ -65,14 +77,15 @@ exports.user_login = (req, res, next) => {
                           email: user[0].email,
                           userId: user[0]._id
                         },
-                        process.env.JWT_KEY,
+                        configJwt.jwtKey,
                         {
                             expiresIn: "1h"
                         }
                       );
                     return res.status(200).json({
                         message: 'Auth Successful',
-                        token: token
+                        token: token,
+                        login: "login"
                     });
                 }
                 res.status(401).json({
@@ -87,6 +100,41 @@ exports.user_login = (req, res, next) => {
             });
         });
 }
+
+exports.userLogin =  async (req, res) => {
+    try{
+        const checkUserEmail = await User.findOne({ email: req.body.email });
+        if(!checkUserEmail) {
+            return res.status(401).json({
+                message: 'No Email Addres'
+            });
+        }
+        if(bcrypt.compareSync(req.body.password, checkUserEmail.password)){
+            const token = await jwt.sign(
+                {
+                    email: checkUserEmail.email,
+                    id: checkUserEmail._id
+                },
+                configJwt.jwtKey,
+                {
+                    expiresIn: "1h"
+                }
+            )
+            return res.status(200).json({
+                message: 'Auth Successful',
+                token: token
+            });
+        }else{
+            res.status(401).json({
+                message: 'Wrong Password'
+            });
+        }
+    } catch (error){
+        res.status(500).json({
+            error: error
+        });
+    }
+} 
 
 exports.user_delete = (req, res, next) => {
     User.remove({ _id: req.params.userId })
@@ -103,3 +151,14 @@ exports.user_delete = (req, res, next) => {
             });
         });
 }
+
+exports.userRemove =  async(req, res) => {
+    try{
+      const user = await User.deleteOne({ _id: req.params.userId });
+      return res.status(200).json({
+            message: 'User Deleted'
+      });
+    } catch(error){
+      next(error)
+    }
+  };
