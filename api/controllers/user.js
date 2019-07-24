@@ -2,8 +2,16 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const configJwt = require("../../config/config");
+const nodemailer = require('nodemailer');
+const sendgridTransport = require('nodemailer-sendgrid-transport');
 
 const User = require('../models/user');
+
+const transporter = nodemailer.createTransport(sendgridTransport({
+    auth: {
+        api_key: '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'
+    }
+}));
 
 exports.user_signup = (req, res, next) => {
     User.find({ email: req.body.email })
@@ -49,6 +57,12 @@ exports.userCreate = async (req, res, next) => {
     const input = req.body;
     try {
         const user = await User.create(input);
+        transporter.sendMail({
+            to: input.email,
+            from: 'node-rest@rest.com',
+            subject: 'Signup Successful',
+            html: '<h1> You Successfully Signed Up !'
+        });
         // res.json(user)
         return res.status(201).json({
             message: 'User Created',
