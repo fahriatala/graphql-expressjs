@@ -49,7 +49,11 @@ exports.userCreate = async (req, res, next) => {
     const input = req.body;
     try {
         const user = await User.create(input);
-        res.json(user)
+        // res.json(user)
+        return res.status(201).json({
+            message: 'User Created',
+            data: user
+        });
     } catch (error) {
         next(error)
     }
