@@ -3,17 +3,37 @@ const Product = require('../models/product');
 
 
 exports.products_get_all = (req, res, next) => {
+    const currentPagination = req.query.page || 1;
+    const perPage = 5;
+    let totalItems;
+    let lastPage;
     Product.find()
+        .countDocuments()
         // use select if only u need to show some data
         .select('name price _id productImage')
         // end of select
         .exec()
+        .then(count => {
+            totalItems = count;
+            return Product.find()
+            .skip((currentPagination - 1) * perPage)
+            .limit(perPage)
+        })
         .then(docs => {
             console.log(docs);
             if(docs.length > 0){
                 // res.status(200).json(docs);
+                if(Number(currentPagination) > 1){
+                     lastPage =  'http://localhost:3000/products/?page=' + (Number(currentPagination)-1);
+                } else{
+                     lastPage = null;
+                }
                 const response = {
+                    currentPage: 'http://localhost:3000/products/?page=' + (Number(currentPagination)),
+                    nextPage: 'http://localhost:3000/products/?page=' + (Number(currentPagination)+1),
+                    lastPages: lastPage,
                     count: docs.length,
+                    totalProducts: totalItems,
                     // product: docs
                     products: docs.map(doc => {
                         if(doc.productImage) {
@@ -32,6 +52,7 @@ exports.products_get_all = (req, res, next) => {
                     })
                 };
                 res.status(200).json(response);
+                // res.status(200).json({messsage: 'success', products:response, totalItems})
             } else {
                 res.status(404).json({
                     message: 'No Entries'
