@@ -1,6 +1,8 @@
+const path = require('path');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const Product = require('../models/product');
-
+const rimRaf = require('rimraf');
 
 exports.products_get_all = (req, res, next) => {
     const currentPagination = req.query.page || 1;
@@ -73,13 +75,14 @@ exports.products_create_product = (req, res, next) => {
     //     name: req.body.name,
     //     price: req.body.price,
     // };
-    console.log(req.file);
+    // console.log(req.file);
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
         price: req.body.price,
         productImage: req.file.path
     });
+    // console.log(req.file.path);
     product
         .save()
         .then(result => {
@@ -176,25 +179,25 @@ exports.products_update_product = (req, res, next) => {
         });
 }
 
-exports.products_delete = (req, res, next) => {
-    const id = req.params.productId;
-    Product.remove({ _id: id })
-        .exec()
-        .then(result => {
-            // res.status(200).json(result);
-            res.status(200).json({
-                message: 'Product Deleted',
-                request: {
-                    type: 'POST',
-                    url: 'http://localhost:3000/products',
-                    body: { name: 'String', price: 'Number' }
-                }
-            });
-        })
-        .catch(err => {
-            console.log(err);
-            res.status(500).json({
-                error: err
-            });
+exports.products_delete = async (req, res, next) => {
+    try{
+        const id = req.params.productId;
+        const checkImage = await Product.findOne({ _id: id });
+        rimRaf(checkImage.productImage, function(err) {
+            if (err){
+                throw(err);
+            }
         });
+        await Product.remove({ _id: id });
+        res.status(200).json({
+            message: 'Product Deleted',
+            request: {
+                type: 'POST',
+                url: 'http://localhost:3000/products',
+                body: { name: 'String', price: 'Number' }
+            }
+        });
+      } catch(err){
+        return res.send(err);
+      }
 }
