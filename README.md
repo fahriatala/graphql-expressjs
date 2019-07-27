@@ -10,6 +10,8 @@ Installation:
 
 4. npm start
 
+5. Run Test -> npm test
+
 Email Installation:
 
 1. Go to sendgrid.com and create an account there
