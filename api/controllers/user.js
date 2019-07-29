@@ -119,38 +119,44 @@ exports.user_login = (req, res, next) => {
         });
 }
 
-exports.userLogin =  async (req, res) => {
+exports.userLogin =  async (req, res, next) => {
+    const email = req.body.email;
+    const password = req.body.password;
     try{
-        const checkUserEmail = await User.findOne({ email: req.body.email });
+        const checkUserEmail = await User.findOne({ email: email });
         if(!checkUserEmail) {
             return res.status(401).json({
                 message: 'No Email Addres'
             });
         }
-        if(bcrypt.compareSync(req.body.password, checkUserEmail.password)){
-            const token = await jwt.sign(
-                {
-                    email: checkUserEmail.email,
-                    id: checkUserEmail._id
-                },
-                configJwt.jwtKey,
-                {
-                    expiresIn: "1h"
-                }
-            )
-            return res.status(200).json({
-                message: 'Auth Successful',
-                token: token
-            });
-        }else{
-            res.status(401).json({
-                message: 'Wrong Password'
-            });
+        const isEqual = await bcrypt.compareSync(password, checkUserEmail.password);
+        if(!isEqual) {
+            const error = new Error('Wrong Password');
+            error.statusCode = 401;
+            throw error;
         }
-    } catch (error){
-        res.status(500).json({
-            error: error
+        const token = jwt.sign(
+            {
+                email: email,
+                id: checkUserEmail._id
+            },
+            configJwt.jwtKey,
+            {
+                expiresIn: "1h"
+            }
+        );
+        return res.status(200).json({
+            message: 'Auth Successful',
+            token: token,
+            userId: checkUserEmail._id
         });
+      
+    } catch (err){
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+        next(err);
+        return err;
     }
 } 
 
