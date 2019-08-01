@@ -158,7 +158,24 @@ exports.userLogin =  async (req, res, next) => {
         next(err);
         return err;
     }
-} 
+}
+
+exports.getUserEmail = async (req, res, next) => {
+    try {
+      const user = await User.findById(req.body.userId);
+      if (!user) {
+        const error = new Error('User not found.');
+        error.statusCode = 404;
+        throw error;
+      }
+      res.json(user)
+    } catch (err) {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    }
+  };
 
 exports.user_delete = (req, res, next) => {
     User.remove({ _id: req.params.userId })

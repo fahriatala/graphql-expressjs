@@ -70,57 +70,40 @@ exports.products_get_all = (req, res, next) => {
         });
 }
 
-exports.products_create_product = (req, res, next) => {
-    // const product = {
-    //     name: req.body.name,
-    //     price: req.body.price,
-    // };
-    // console.log(req.file);
+exports.products_create_product = async (req, res, next) => {
+    const name = req.body.name;
+    const price = req.body.price;
+    const productImage = req.file.path;
     const product = new Product({
-        _id: new mongoose.Types.ObjectId(),
-        name: req.body.name,
-        price: req.body.price,
-        productImage: req.file.path
-    });
-    // console.log(req.file.path);
-    product
-        .save()
-        .then(result => {
-            console.log(result);
-            res.status(201).json({
-                message: 'Success Created Product',
-                // createdProduct: result
-                createdProduct: {
-                    name: result.name,
-                    price: result.price,
-                    _id: result._id,
-                    request: {
-                        type: 'GET',
-                        url: "http://localhost:3000/products/" + result._id
-                    }
-                }
-            });
-        })
-        .catch(err => {
-            console.log(err);
-            res.status(500).json({
-                error: err
-            });
+        name: name,
+        price: price,
+        productImage: productImage
         });
+    try{
+       const result =  await product.save();
+        res.status(201).json({
+           message: 'Success Created Product',
+           status: 'ok',
+            createdProduct: {
+                name: result.name,
+                price: result.price,
+                _id: result._id,
+                request: {
+                    type: 'GET',
+                    url: "http://localhost:3000/products/" + result._id
+                }
+             }
+       });
+    //    return result;
+    } catch (err){
+        next(err);
+        return err;
+    }
 }
+
 
 exports.products_get_productId = (req, res, next) => {
     const id = req.params.productId;
-    // if(id === 'special'){
-    //     res.status(200).json({
-    //         message: 'This is a special ID',
-    //         id: id
-    //     });
-    // } else{
-    //     res.status(200).json({
-    //         message:'Passed the ID'
-    //     })
-    // }
     Product.findById(id)
         .select('name price _id productImage')
         .exec()
@@ -150,9 +133,6 @@ exports.products_get_productId = (req, res, next) => {
 }
 
 exports.products_update_product = (req, res, next) => {
-    // res.status(200).json({
-    //     message: 'Updated Product'
-    // });
     const id = req.params.productId;
     const updateOps = {};
     for(const ops of req.body) {

@@ -9,6 +9,8 @@ router.post('/register', userController.userCreate);
 router.post('/login', userController.user_login);
 router.post('/signin', userController.userLogin);
 
+router.get('/email', userController.getUserEmail);
+
 // router.delete('/:userId', checkAuth, userController.user_delete );
 router.delete('/:userId', checkAuth, userController.userRemove );
 
