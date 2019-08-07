@@ -1,13 +1,17 @@
+const path = require('path');
 const express = require('express');
 const app = express();
 const morgan = require('morgan');
+const multer = require('multer');
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const config = require("./config/config");
+const rimRaf = require('rimraf');
 const graphqlHttp = require('express-graphql');
 
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
+const auth = require('./api/middleware/auth');
 
 mongoose.connect(config.mongoURI,
     {
@@ -17,10 +21,36 @@ mongoose.connect(config.mongoURI,
 );
 mongoose.Promise = global.Promise;
 
+const fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'uploads');
+    },
+    filename: (req, file, cb) => {
+      cb(null, new Date().toISOString() + '-' + file.originalname);
+    }
+  });
+  
+  const fileFilter = (req, file, cb) => {
+    if (
+      file.mimetype === 'image/png' ||
+      file.mimetype === 'image/jpg' ||
+      file.mimetype === 'image/jpeg'
+    ) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  };
+  
 // app.use(morgan("dev"));
-app.use('/uploads', express.static('uploads'));
+// app.use('/uploads', express.static('uploads'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.use(
+    multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
+  );
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -35,11 +65,26 @@ app.use((req, res, next) => {
     next();
   });
 
-// app.use((req, res, next) => {
-//     const error = new Error('Not Found');
-//     error.status = 404;
-//     next(error);
-// });
+
+app.use(auth);
+
+app.put('/post-image', (req, res, next) => {
+    if (!req.isAuth) {
+        throw new Error('Not Authenticated')
+    }
+    if (!req.file) {
+        return res.status(200).json({ message: 'No File Provided' });
+    }
+    if (req.body.oldPath) {
+        rimRaf(req.body.oldPath, function(err) {
+            if (err){
+                throw(err);
+            }
+        });
+    }
+    return res.status(201)
+    .json({message: 'file stored', filePath: req.file.path});
+});
 
 app.use(
     '/graphql', 
@@ -67,5 +112,6 @@ app.use((error, req, res,next) => {
         }
     });
 });
+
 
 module.exports = app;
