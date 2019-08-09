@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs')
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const configJwt = require('../config/config');
+const rimRaf = require('rimraf');
 
 const User = require('../api/models/user');
 const Product = require('../api/models/product');
@@ -127,5 +128,86 @@ module.exports = {
             }),
             totalProducts: totalProducts
           };
+    },
+    product: async function({ id }, req ) {
+        if( !req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const product = await Product.findById(id).populate('creator');
+        if (!product) {
+            const error = new Error('No Product Found');
+            error.code = 404;
+            throw error;
+        }
+        return {...product._doc,
+            _id: product._id.toString(),
+            createdAt: product.createdAt.toISOString(),
+            updatedAt: product.updatedAt.toISOString(),
+        };
+    },
+    updateProduct: async function({id, productInput}, req) {
+        if( !req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const product = await Product.findById(id).populate('creator');
+        if (!product) {
+            const error = new Error('No Product Found');
+            error.code = 404;
+            throw error;
+        }
+        if (product.creator._id.toString() === req.userId.toString()) {
+            const error = new Error('Not authorized!');
+            error.code = 403;
+            throw error;
+        }
+        const errors = [];
+        if(validator.isEmpty(productInput.name) || !validator.isLength(productInput.name, { min: 5 })) {
+            errors.push({ message: 'Title is invalid' });
+        }
+        if(errors.length > 0) {
+            const error = new Error('invalid input');
+            error.data = errors;
+            error.code = 422;
+            throw error;
+        }
+        product.name = productInput.name;
+        product.price = productInput.price;
+        if(productInput.productImage !== 'undefined') {
+            product.productImage = productInput.productImage;
+        }
+        const updatedProduct = await product.save();
+        return {...updatedProduct._doc,
+             _id: updatedProduct._id.toString(),
+            createdAt: updatedProduct.createdAt.toISOString(),
+            updatedAt: updatedProduct.updatedAt.toISOString()}
+    },
+    deleteProduct: async function({ id }, req ) {
+        if( !req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const product = await Product.findById(id);
+        if (!product) {
+            const error = new Error('No Product Found');
+            error.code = 404;
+            throw error;
+        }
+        if (product.creator.toString() === req.userId.toString()) {
+            const error = new Error('Not authorized!');
+            error.code = 403;
+            throw error;
+        }
+        rimRaf(product.productImage, function(err) {
+            if (err){
+                throw(err);
+            }
+        });
+        await Product.findByIdAndRemove(id);
+        return true;
     }
 };

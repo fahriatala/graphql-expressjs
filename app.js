@@ -12,6 +12,7 @@ const graphqlHttp = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
 const auth = require('./api/middleware/auth');
+const { clearImage } = require('./util/file');
 
 mongoose.connect(config.mongoURI,
     {
@@ -81,6 +82,7 @@ app.put('/post-image', (req, res, next) => {
                 throw(err);
             }
         });
+        // clearImage(req.body.oldPath);
     }
     return res.status(201)
     .json({message: 'file stored', filePath: req.file.path});
