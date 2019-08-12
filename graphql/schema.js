@@ -51,6 +51,7 @@ module.exports = buildSchema(`
         createProduct( productInput: ProductInputData): Product!
         updateProduct(id: ID!, productInput: ProductInputData): Product!
         deleteProduct(id: ID!): Boolean
+        updateEmail(email: String!): User!
     }
 
     schema {

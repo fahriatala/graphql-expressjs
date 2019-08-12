@@ -209,5 +209,21 @@ module.exports = {
         });
         await Product.findByIdAndRemove(id);
         return true;
+    },
+    updateEmail: async function({ email }, req) {
+        if( !req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const user = await User.findById(req.userId);
+        if (!user) {
+            const error = new Error('No User Found');
+            error.code = 404;
+            throw error;
+        }
+        user.email = email;
+        await user.save();
+        return {...user._doc, id: user._id.toString()};
     }
 };
