@@ -159,7 +159,7 @@ module.exports = {
             error.code = 404;
             throw error;
         }
-        if (product.creator._id.toString() === req.userId.toString()) {
+        if (product.creator._id.toString() !== req.userId.toString()) {
             const error = new Error('Not authorized!');
             error.code = 403;
             throw error;
@@ -208,6 +208,9 @@ module.exports = {
             }
         });
         await Product.findByIdAndRemove(id);
+        // const user = await User.findById(req.userId);
+        // user.products.pull(id);
+        // await user.save();
         return true;
     },
     updateEmail: async function({ email }, req) {
